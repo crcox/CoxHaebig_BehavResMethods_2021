@@ -1,7 +1,7 @@
 library('dplyr')
 library('netgrowr')
 library('parallel')
-source('./R/local_utils.R')
+source('./R/utils.R')
 
 append_formula <- function(f, x) {
     update(f, paste("~.", x, sep = "+"))
