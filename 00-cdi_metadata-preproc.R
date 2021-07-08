@@ -4,6 +4,7 @@ load('./data/cdi-metadata.Rdata')
 cdi_metadata_preproc <- subset(x = cdi_metadata, cdi_metadata[['in_CoxHae']])
 cdi_metadata_preproc <- subset(x = cdi_metadata_preproc, cdi_metadata_preproc[['word']] != "so big!")
 cdi_metadata_preproc <- subset(x = cdi_metadata_preproc, cdi_metadata_preproc[['word']] != "pet's name")
+cdi_metadata_preproc <- subset(x = cdi_metadata_preproc, cdi_metadata_preproc[['word']] != "hers")
 
 # Exclude homonyms ----
 ## By stripping qualifiers and then removing all instances of any word that is

@@ -24,9 +24,13 @@ parallel::clusterSetRNGStream(cl)
 invisible(parallel::clusterEvalQ(cl, {
   library('dplyr')
   library('netgrowr')
-  source('./R/local_utils.R')
+  source('./R/utils.R')
 }))
 
+# Month 30 is the highest month we have AoA data for.
+# If we model month 30, all unknown words will be learned.
+# To avoid this, month 30 is not modeled.
+modelvars <- subset(modelvars, month < 30)
 
 # Empty (random selection) model ----
 # +++ All words assigned equal probability
