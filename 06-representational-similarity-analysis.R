@@ -41,57 +41,14 @@ sample_participants_by_cue <- function(d, n) {
     )
 }
 
-# Load association data ----
-associations <- load_to_list(c("./data/associations-adult.Rdata", "./data/associations-child.Rdata"))
-names(associations) <- trim_prefix(names(associations), "associations_")
-associations$adult$RESPONSE <- as.character(associations$adult$RESPONSE)
-associations$child$RESPONSE <- as.character(associations$child$RESPONSE)
-associations$adult$CUE <- as.character(associations$adult$CUE)
-associations$child$CUE <- as.character(associations$child$CUE)
-associations$adult$PP_ID <- as.character(associations$adult$PP_ID)
-associations$child$PP_ID <- as.character(associations$child$PP_ID)
-
-associations <- lapply(
-    associations,
-    function (d) {
-        droplevels(subset(d, CUE !="so big!"))
-    }
-)
-
-stopifnot(all.equal(
-    levels(associations[['adult']]['CUE']),
-    levels(associations[['child']]['CUE'])
-))
-
-# Check that at least 95 participants responded to all retained cues ----
-pp_count <- vapply(
-  associations,
-  FUN = function(d) count_participants_by_cue(d$CUE, d$PP_ID),
-  FUN.VALUE = numeric(length(unique(associations$adult$CUE)))
-)
-stopifnot(all(pmin(pp_count[, 1], pp_count[, 2]) > 95))
-
-# Select 100 participants (300 responses) per cue ----
-associations <- lapply(associations, sample_participants_by_cue, n = 100)
-
-# Compute true representational similarity matrices ----
 generate_response_profiles <- function(d) {
     xtabs(~ RESPONSE + CUE, data = d)
 }
+
 correlate_binary_response_profiles <- function(x) {
     as.dist(cor(x > 0))
 }
-repsim <- lapply(
-    associations,
-    function(d) {
-        correlate_binary_response_profiles(
-            generate_response_profiles(d)
-        )
-    }
-)
-repsim_cor <- cor(repsim$adult, repsim$child, method = "spearman")
 
-# Begin simulation ----
 pivot_responses_wide <- function(d) {
     tidyr::pivot_wider(
         data = d,
@@ -169,6 +126,51 @@ simulate_null_cor <- function(wide_assoc) {
     return(cor(repsim[[1]], repsim[[2]], method = "spearman"))
 }
 
+# Load association data ----
+associations <- load_to_list(c("./data/associations-adult.Rdata", "./data/associations-child.Rdata"))
+names(associations) <- trim_prefix(names(associations), "associations_")
+associations$adult$RESPONSE <- as.character(associations$adult$RESPONSE)
+associations$child$RESPONSE <- as.character(associations$child$RESPONSE)
+associations$adult$CUE <- as.character(associations$adult$CUE)
+associations$child$CUE <- as.character(associations$child$CUE)
+associations$adult$PP_ID <- as.character(associations$adult$PP_ID)
+associations$child$PP_ID <- as.character(associations$child$PP_ID)
+
+associations <- lapply(
+    associations,
+    function (d) {
+        droplevels(subset(d, CUE !="so big!"))
+    }
+)
+
+stopifnot(all.equal(
+    levels(associations[['adult']]['CUE']),
+    levels(associations[['child']]['CUE'])
+))
+
+# Check that at least 95 participants responded to all retained cues ----
+pp_count <- vapply(
+  associations,
+  FUN = function(d) count_participants_by_cue(d$CUE, d$PP_ID),
+  FUN.VALUE = numeric(length(unique(associations$adult$CUE)))
+)
+stopifnot(all(pmin(pp_count[, 1], pp_count[, 2]) > 95))
+
+# Select 100 participants (300 responses) per cue ----
+associations <- lapply(associations, sample_participants_by_cue, n = 100)
+
+# Compute true representational similarity matrices ----
+repsim <- lapply(
+    associations,
+    function(d) {
+        correlate_binary_response_profiles(
+            generate_response_profiles(d)
+        )
+    }
+)
+repsim_cor <- cor(repsim$adult, repsim$child, method = "spearman")
+
+# Begin simulation ----
 # Establish cluster
 library('parallel')
 cl <- parallel::makeCluster(parallel::detectCores() - 1)
