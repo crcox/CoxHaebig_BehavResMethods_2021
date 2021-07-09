@@ -21,25 +21,12 @@ add_suffix <- function(x, suffix) {
     return(vapply(x, FUN = str_append, FUN.VALUE = character(1), suffix = suffix, USE.NAMES = FALSE))
 }
 
-load('./data/cdi-metadata-preproc.Rdata')
-associations <- load_to_list(c("./data/associations-adult.Rdata", "./data/associations-child.Rdata"))
-names(associations) <- trim_prefix(names(associations), "associations_")
-
-# Drop cues to match metadata-preproc ----
-# Also, add CDI item id and lemma columns to word associations, and remove any
-# empty responses.
 inner_join_assoc_cdi <- function(d, id_tbl) {
     d <- dplyr::inner_join(d, id_tbl)
     d$CUE <- as.factor(d$CUE)
     return(subset(d, RESPONSE != ""))
 }
-associations <- lapply(
-    associations,
-    FUN = inner_join_assoc_cdi,
-    id_tbl = dplyr::select(cdi_metadata_preproc, CUE = cue_CoxHae, num_item_id, lemma)
-)
 
-# Check that at least 95 participants responded to all retained cues ----
 count_participants_by_cue <- function(cues, participant_id) {
   X <- lapply(
     split(
@@ -50,18 +37,7 @@ count_participants_by_cue <- function(cues, participant_id) {
     FUN = droplevels)
   return(vapply(X = X, FUN = nlevels, FUN.VALUE = numeric(1)))
 }
-pp_count <- vapply(
-  associations,
-  FUN = function(d) count_participants_by_cue(d$CUE, d$PP_ID),
-  FUN.VALUE = numeric(nlevels(associations$adult$CUE))
-)
-summary(pp_count)
-stopifnot(all(pmin(pp_count[, 1], pp_count[, 2]) > 95))
 
-
-# Select 100 participants (300 responses) per cue ----
-# For cues with fewer than 100 participants, include all.
-# For cues with more than 100 participants, exclude some to get to 100.
 sample_participants_by_cue <- function(d, n) {
     tidyr::pivot_wider(
         data = d,
@@ -80,6 +56,34 @@ sample_participants_by_cue <- function(d, n) {
         values_to = "RESPONSE"
     )
 }
+
+# Load metadata and associations ----
+load('./data/cdi-metadata-preproc.Rdata')
+associations <- load_to_list(c("./data/associations-adult.Rdata", "./data/associations-child.Rdata"))
+names(associations) <- trim_prefix(names(associations), "associations_")
+
+# Drop cues to match metadata-preproc ----
+# Also, add CDI item id and lemma columns to word associations, and remove any
+# empty responses.
+associations <- lapply(
+    associations,
+    FUN = inner_join_assoc_cdi,
+    id_tbl = dplyr::select(cdi_metadata_preproc, CUE = cue_CoxHae, num_item_id, lemma)
+)
+
+# Check that at least 95 participants responded to all retained cues ----
+pp_count <- vapply(
+  associations,
+  FUN = function(d) count_participants_by_cue(d$CUE, d$PP_ID),
+  FUN.VALUE = numeric(nlevels(associations$adult$CUE))
+)
+summary(pp_count)
+stopifnot(all(pmin(pp_count[, 1], pp_count[, 2]) > 95))
+
+
+# Select 100 participants (300 responses) per cue ----
+# For cues with fewer than 100 participants, include all.
+# For cues with more than 100 participants, exclude some to get to 100.
 associations <- lapply(
     associations,
     FUN = sample_participants_by_cue,
