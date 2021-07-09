@@ -147,7 +147,7 @@ for (repetition in 1:500) {
 
     # Comparison 1: Each growth model (and combinations) over baseline ----
     X <- list()
-    X[[1]] <- t(vapply(c(M1, M2n, M3n), netgrowr::model_comparison, numeric(6), restricted = M0))
+    X[[1]] <- t(vapply(c(M1, M2n, M3n), netgrowr::model_comparison, numeric(7), restricted = M0))
 
     # Comparison 2: Preferential Acq. vs. LOA ----
     comparisons <- as.data.frame(rbind(
