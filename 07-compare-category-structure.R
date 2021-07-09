@@ -1,12 +1,6 @@
 library('igraph')
 library('boot')
 
-load("~/GitHub/CoxHae_ChildSemantics_2020/networks/CoxHae_CDI/CHILDES_uwAssocNet_Transcript_CDI.Rdata")
-load("~/GitHub/CoxHae_ChildSemantics_2020/networks/CoxHae_CDI/CHILDES_uwAssocNet_Transcript_CDI_SPARSE.Rdata")
-load("~/GitHub/CoxHae_ChildSemantics_2020/networks/CoxHae_CDI/CoxHae_uwAssocNet_Child_3R.Rdata")
-load("~/GitHub/CoxHae_ChildSemantics_2020/networks/CoxHae_CDI/CoxHae_uwAssocNet_Adult_3R.Rdata")
-load("~/GitHub/CoxHae_ChildSemantics_2020/data/CDI_Metadata_CoxHae.Rdata")
-
 trim_prefix <- function(x, prefix) {
     return(trimws(x, which = "left", whitespace = prefix))
 }
@@ -23,6 +17,27 @@ load_to_list <- function(files) {
     X <- new.env()
     lapply(files, load, envir = X)
     return(as.list(X))
+}
+
+get_bca_ci_values <- function(x, data) {
+    boot::boot.ci(data, index = x, type = "bca")[["bca"]][4:5]
+}
+
+summary.boot <- function(b, index = 1:length(b$t0)) {
+    out <- cbind(
+        b$t0[index],
+        apply(b$t[, index], 2, sd),
+        t(vapply(index, get_bca_ci_values, numeric(2), data = b))
+    )
+    colnames(out) <- c("mean", "SE", "ci.l", "ci.u")
+    cat('\n')
+    print(out)
+    cat('\n')
+    cat("Confidence intervals are 95% computed via", b$sim, "bootstrap and BCa.\n")
+    cat("Based on", b$R, "bootstrap replicates.", '\n')
+    cat("Calculations and intervals on original scale.", '\n')
+    cat('\n')
+    invisible(out)
 }
 
 # Load processed word associations ----
@@ -65,16 +80,13 @@ bootfun <- function(distances, ix, within_cat) {
   between_cat <- !within_cat
   w <- vapply(d, function(x, z) return(mean(sample(x[z], replace = TRUE))), numeric(1), z = within_cat)
   b <- vapply(d, function(x, z) return(mean(sample(x[z], replace = TRUE))), numeric(1), z = between_cat)
-  out <- c(w/b, as.numeric(dist(w / b)))
+  x <- w / b
+  out <- c(x, x[1] - x[2], x[1] - x[3], x[2] - x[3])
   names(out) <- c(names(d), combn_and_paste(names(d), 2))
   return(out)
 }
 
-ncores <- parallel::detectCores() - 1
-cl <- parallel::makeCluster(ncores)
-parallel::clusterSetRNGStream(cl)
-BB <- boot::boot(assocnet_distances[c('adult', 'child', 'childes')], bootfun, 1000, within_cat = within_cat_vec, cl = cl)
-parallel::stopCluster(cl)
+BB <- boot::boot(assocnet_distances[c('adult', 'child', 'childes')], bootfun, 10000, within_cat = within_cat_vec, parallel = "multicore", ncpus = 30)
 
 colnames(BB$t) <- names(BB$t0)
 boot::boot.ci(BB, index = "adult", type = "bca")
@@ -82,4 +94,8 @@ boot::boot.ci(BB, index = "child", type = "bca")
 boot::boot.ci(BB, index = "childes", type = "bca")
 boot::boot.ci(BB, index = "adult-child", type = "bca")
 boot::boot.ci(BB, index = "adult-childes", type = "bca")
+
 boot::boot.ci(BB, index = "child-childes", type = "bca")
+
+comparisons <- c("adult-child", "adult-childes", "child-childes")
+summary(BB, index = comparisons)
