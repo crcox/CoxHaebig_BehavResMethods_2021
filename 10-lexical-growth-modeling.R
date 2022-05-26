@@ -15,19 +15,24 @@ model_comp_helper <- function(full, restricted, M) {
   return(netgrowr::model_comparison(M[[full]], M[[restricted]]))
 }
 
+load_variable <- function(file, variable) {
+  e <- new.env()
+  load(file, envir = e)
+  return(e[[variable]])
+}
+
 # Load data ----
 # Month 30 is the highest month we have AoA data for.
 # If we model month 30, all unknown words will be learned.
 # To avoid this, month 30 is not modeled.
-
-load('./network/modelvars.Rdata')
-modelvars <- subset(modelvars, month < 30)
+modelvars <- subset(load_variable("./network/modelvars.Rdata", "modelvars"),
+                    month < 30)
 
 # Define models by constructing formulas ----
 
 # Empty (random selection) model
 # +++ All words assigned equal probability
-fE <- aoa ~ 1
+fE <- formula(aoa ~ 1)
 
 # Psycholinguistic baseline model
 # +++ number of phonemes
@@ -159,7 +164,7 @@ for (repetition in 1:500) {
       c(full = 'preferential_acquisition_childes+lure_of_the_associates_childes', restricted = 'lure_of_the_associates_childes')
     ))
     X[[2]] <- t(mapply(model_comp_helper, comparisons[["full"]], comparisons[["restricted"]], MoreArgs = list(M = c(M1, M2g))))
-    rownames(X[[2]]) <- apply(comparisons, 1, paste, collapse="|")
+    rownames(X[[2]]) <- apply(comparisons, 1, paste, collapse = "|")
 
     # Comparison 3: Adult vs. Child vs. CHILDES (Preferential Acq. only) ----
     comparisons <- as.data.frame(rbind(
@@ -171,7 +176,7 @@ for (repetition in 1:500) {
       c(full = 'preferential_acquisition_adult+preferential_acquisition_childes', restricted = 'preferential_acquisition_childes')
     ))
     X[[3]] <- t(mapply(model_comp_helper, comparisons[["full"]], comparisons[["restricted"]], MoreArgs = list(M = c(M1, M2n))))
-    rownames(X[[3]]) <- gsub("preferential_acquisition_", "", apply(comparisons, 1, paste, collapse="|"))
+    rownames(X[[3]]) <- gsub("preferential_acquisition_", "", apply(comparisons, 1, paste, collapse = "|"))
 
     # Comparison 4: Adult & Child vs. CHILDES (Preferential Acq. only) ----
     comparisons <- as.data.frame(rbind(
@@ -180,7 +185,7 @@ for (repetition in 1:500) {
       c(full = 'preferential_acquisition_adult+preferential_acquisition_child+preferential_acquisition_childes', restricted = 'preferential_acquisition_child+preferential_acquisition_childes')
     ))
     X[[4]] <- t(mapply(model_comp_helper, comparisons[["full"]], comparisons[["restricted"]], MoreArgs = list(M = c(M2n, M3n))))
-    rownames(X[[4]]) <- gsub("preferential_acquisition_", "", apply(comparisons, 1, paste, collapse="|"))
+    rownames(X[[4]]) <- gsub("preferential_acquisition_", "", apply(comparisons, 1, paste, collapse = "|"))
 
     model_comparisons <- do.call('rbind', X)
     model_comparisons <- cbind(
