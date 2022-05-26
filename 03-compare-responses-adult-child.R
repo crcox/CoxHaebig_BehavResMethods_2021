@@ -1,6 +1,4 @@
 library('dplyr')
-source('./R/merge_kuperman.R')
-source('./R/merge_SUBTLEX.R')
 
 ttest_vec <- function(x) {
   c(
