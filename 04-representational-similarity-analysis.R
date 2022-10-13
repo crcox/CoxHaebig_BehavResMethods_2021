@@ -140,5 +140,5 @@ null_repsim_cor <- parSapply(
 summary(null_repsim_cor)
 print(mean(null_repsim_cor < repsim_cor))
 
-save(null_repsim_cor, file = 'null-repsim-cor-adult-child.Rdata')
-save(repsim_cor, file = 'repsim-cor-adult-child.Rdata')
+save(null_repsim_cor, file = "results/representational-similarity-analysis/null-repsim-cor-adult-child.Rdata")
+save(repsim_cor, file = "results/representational-similarity-analysis/repsim-cor-adult-child.Rdata")
