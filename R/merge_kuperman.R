@@ -29,7 +29,7 @@
 #'   and 52 control words) took some 20 minutes to complete. Participants were
 #'   paid half a dollar cent per rated word (i.e., $1.81 for a validly completed
 #'   list)."
-merge_kuperman <- function(R, KupAOA) {
+merge_kuperman <- function(R, KupAoA) {
   z <- KupAoA$Word != KupAoA$Alternative.spelling
   R <- left_join(R, select(KupAoA, RESPONSE = Word, Freq_pm, Dom_PoS_SUBTLEX, Nletters, Nphon, Nsyll, Lemma_highest_PoS, AoA_Kup, AoA_Kup_lem), by = "RESPONSE")
   R <- left_join(R, select(subset(KupAoA, z), RESPONSE = Alternative.spelling, Freq_pm, Dom_PoS_SUBTLEX, Nletters, Nphon, Nsyll, Lemma_highest_PoS, AoA_Kup, AoA_Kup_lem), by = "RESPONSE")
@@ -56,5 +56,5 @@ merge_kuperman <- function(R, KupAOA) {
       AoA_Kup = AoA_Kup.x,
       AoA_Kup_lem = AoA_Kup_lem.x
     )
-  return(R)    
+  return(R)
 }
