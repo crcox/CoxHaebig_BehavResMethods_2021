@@ -1,24 +1,18 @@
-library('dplyr')
-library('tidyr')
+library(dplyr)
+library(tidyr)
 
-load_to_list <- function(files) {
-    X <- new.env()
-    lapply(files, load, envir = X)
-    return(as.list(X))
+load_to_list <- function(...) {
+    files <- rlang::list2(...)
+    purrr::map(files, function(filename) {
+        e <- new.env()
+        nm <- load(filename, envir = e)
+        e[[nm]]
+    })
 }
 
-trim_prefix <- function(x, prefix) {
-    return(trimws(x, which = "left", whitespace = prefix))
-}
-
-add_prefix <- function(x, prefix) {
-    str_prepend <- function(prefix, ...) paste(prefix, ..., sep = "")
-    return(vapply(x, FUN = str_prepend, FUN.VALUE = character(1), prefix = prefix, USE.NAMES = FALSE))
-}
-
-add_suffix <- function(x, suffix) {
-    str_append <- function(suffix, ...) paste(..., suffix, sep = "")
-    return(vapply(x, FUN = str_append, FUN.VALUE = character(1), suffix = suffix, USE.NAMES = FALSE))
+save_as <- function(..., filename) {
+    dat <- rlang::list2(...)
+    save(list = names(dat), file = filename, envir = list2env(dat))
 }
 
 inner_join_assoc_cdi <- function(d, id_tbl) {
@@ -58,9 +52,11 @@ sample_participants_by_cue <- function(d, n) {
 }
 
 # Load metadata and associations ----
-load('./data/cdi-metadata-preproc.Rdata')
-associations <- load_to_list(c("./data/associations-adult.Rdata", "./data/associations-child.Rdata"))
-names(associations) <- trim_prefix(names(associations), "associations_")
+load("./data/cdi-metadata-preproc.Rdata")
+associations <- load_to_list(
+    adult = "./data/associations-adult.Rdata",
+    child = "./data/associations-child.Rdata"
+)
 
 # Drop cues to match metadata-preproc ----
 # Also, add CDI item id and lemma columns to word associations, and remove any
@@ -94,5 +90,11 @@ associations <- lapply(
 names(associations) <- add_prefix(names(associations), prefix = "associations_")
 names(associations) <- add_suffix(names(associations), suffix = "_preproc")
 
-save(associations_adult_preproc, file = './data/associations-adult-preproc.Rdata', envir = list2env(associations))
-save(associations_child_preproc, file = './data/associations-child-preproc.Rdata', envir = list2env(associations))
+save_as(
+    associations_adult_preproc = associations$adult,
+    filename = "./data/associations-adult-preproc.Rdata"
+)
+save_as(
+    associations_child_preproc = associations$child,
+    filename = "./data/associations-child-preproc.Rdata"
+)
